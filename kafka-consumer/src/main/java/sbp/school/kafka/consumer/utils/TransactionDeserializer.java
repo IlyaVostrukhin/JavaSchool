@@ -1,6 +1,5 @@
 package sbp.school.kafka.consumer.utils;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Deserializer;
@@ -9,6 +8,9 @@ import sbp.school.kafka.entity.utils.SchemaValidator;
 
 import java.io.IOException;
 
+/**
+ * Десериализатор для TransactionDto
+ */
 @Slf4j
 public class TransactionDeserializer implements Deserializer<TransactionDto> {
 

@@ -5,6 +5,9 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 
 import java.util.Properties;
 
+/**
+ * Конфигурация потребителя
+ */
 public class KafkaConfig {
 
     public static KafkaConsumer<String, String> getTransactionConsumer(String groupId) {

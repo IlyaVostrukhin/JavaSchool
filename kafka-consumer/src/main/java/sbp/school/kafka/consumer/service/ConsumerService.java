@@ -1,5 +1,6 @@
 package sbp.school.kafka.consumer.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -16,6 +17,9 @@ import java.util.Map;
 
 import static java.util.Objects.nonNull;
 
+/**
+ * Сервис прослушивания топика транзакций
+ */
 @Slf4j
 public class ConsumerService {
 
@@ -54,7 +58,7 @@ public class ConsumerService {
                             record.topic(),
                             record.offset(),
                             record.partition(),
-                            record.value());
+                            new ObjectMapper().writeValueAsString(record.value()));
 
                     currentOffsets.put(
                             new TopicPartition(record.topic(), record.partition()),
