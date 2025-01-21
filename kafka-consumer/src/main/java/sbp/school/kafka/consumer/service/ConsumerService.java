@@ -23,28 +23,21 @@ import static java.util.Objects.nonNull;
 @Slf4j
 public class ConsumerService {
 
-    private final String groupId;
+    private final KafkaConsumer<String, String> consumer;
     private final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new HashMap<>();
 
     public ConsumerService(String groupId) {
-        this.groupId = groupId;
+        consumer = KafkaConfig.getTransactionConsumer(groupId);
     }
 
     public void listen() {
-        KafkaConsumer<String, String> consumer = KafkaConfig.getTransactionConsumer(groupId);
-
         try {
             String topicName = PropertiesReader
                     .readProperties("application.properties")
                     .getProperty("transaction.topic");
 
             consumer.subscribe(Collections.singletonList(topicName));
-            consumer.assignment().forEach(partition -> {
-                var offsetAndMetadata = currentOffsets.get(partition);
-                if (nonNull(offsetAndMetadata)) {
-                    consumer.seek(partition, offsetAndMetadata);
-                }
-            });
+            consumer.assignment().forEach(this::accept);
 
             while (true) {
                 ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
@@ -66,7 +59,7 @@ public class ConsumerService {
                     );
                 }
 
-                consumer.commitSync();
+                consumer.commitAsync();
             }
         } catch (Exception e) {
             log.error("Unexpected error", e);
@@ -76,6 +69,13 @@ public class ConsumerService {
             } finally {
                 consumer.close();
             }
+        }
+    }
+
+    private void accept(TopicPartition partition) {
+        var offsetAndMetadata = currentOffsets.get(partition);
+        if (nonNull(offsetAndMetadata)) {
+            consumer.seek(partition, offsetAndMetadata);
         }
     }
 }
