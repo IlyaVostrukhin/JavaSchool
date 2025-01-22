@@ -13,6 +13,7 @@
         <module>kafka-producer</module>
         <module>kafka-consumer</module>
         <module>kafka-entity</module>
+        <module>confirm</module>
     </modules>
 
     <properties>
@@ -23,6 +24,7 @@
         <jackson.databind.version>2.18.1</jackson.databind.version>
         <junit.jupiter.version>5.11.4</junit.jupiter.version>
         <json.validator.version>1.5.4</json.validator.version>
+        <h2.version>2.1.210</h2.version>
         <maven.compiler.source>19</maven.compiler.source>
         <maven.compiler.target>19</maven.compiler.target>
     </properties>
@@ -58,6 +60,11 @@
                 <groupId>com.networknt</groupId>
                 <artifactId>json-schema-validator</artifactId>
                 <version>${json.validator.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>${h2.version}</version>
             </dependency>
 
             <dependency>
