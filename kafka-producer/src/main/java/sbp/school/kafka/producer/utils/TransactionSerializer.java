@@ -1,0 +1,33 @@
+package sbp.school.kafka.producer.utils;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.serialization.Serializer;
+import sbp.school.kafka.entity.dto.TransactionDto;
+import sbp.school.kafka.entity.utils.SchemaValidator;
+
+import java.nio.charset.StandardCharsets;
+
+@Slf4j
+public class TransactionSerializer implements Serializer<TransactionDto> {
+    @Override
+    public byte[] serialize(String topic, TransactionDto transactionDto) {
+        if (transactionDto == null) {
+            throw new NullPointerException("TransactionDto не может быть пустым!");
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        try {
+            String value = objectMapper.writeValueAsString(transactionDto);
+
+            SchemaValidator.validate(objectMapper.readTree(value), this.getClass().getResourceAsStream("/transaction-schema.json"));
+            return value.getBytes(StandardCharsets.UTF_8);
+        } catch (JsonProcessingException e) {
+            log.error("Ошибка при сериализации TransactionDto", e);
+
+            throw new RuntimeException(e);
+        }
+    }
+}
