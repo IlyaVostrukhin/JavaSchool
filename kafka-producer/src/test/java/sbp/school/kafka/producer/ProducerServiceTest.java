@@ -16,6 +16,7 @@ public class ProducerServiceTest {
         ProducerService service = new ProducerService();
         Assertions.assertDoesNotThrow(() -> service.sendTransaction(
                 new TransactionDto(
+                        "123",
                         OperationType.CREDIT,
                         BigDecimal.TEN,
                         "12345",

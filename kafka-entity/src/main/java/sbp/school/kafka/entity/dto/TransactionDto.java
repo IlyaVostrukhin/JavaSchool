@@ -18,6 +18,7 @@ import java.util.Calendar;
 @AllArgsConstructor
 public class TransactionDto {
 
+    private String id;
     private OperationType operationType;
     private BigDecimal amount;
     private String accountNumber;
