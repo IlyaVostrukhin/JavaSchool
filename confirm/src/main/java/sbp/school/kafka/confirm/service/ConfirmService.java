@@ -7,6 +7,9 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
 import sbp.school.kafka.confirm.config.KafkaConfig;
 import sbp.school.kafka.confirm.config.PropertiesReader;
@@ -18,7 +21,9 @@ import sbp.school.kafka.producer.service.ProducerService;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Timestamp;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -39,16 +44,21 @@ public class ConfirmService {
             .readProperties("confirm.properties")
             .getProperty("confirm.check.timeout"));
     private final KafkaConsumer<String, ConfirmDto> consumer;
+    private final KafkaProducer<String, ConfirmDto> producer;
     private final ProducerService producerService;
     private final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new HashMap<>();
 
     public ConfirmService(String groupId) {
         TransactionRepository.createTransactionTable();
-        consumer = KafkaConfig.getConfirmConsumer(groupId);
+        this.consumer = KafkaConfig.getConfirmConsumer(groupId);
+        this.producer = KafkaConfig.getConfirmProducer();
         this.producerService = new ProducerService();
     }
 
-    public void listen() {
+    /**
+     * Слушает топик обратного потока для получения подтверждения успешной обработки сообщений
+     */
+    public void listenConfirm() {
         try {
             consumer.subscribe(Collections.singletonList(TOPIC_NAME));
             consumer.assignment().forEach(this::accept);
@@ -88,10 +98,43 @@ public class ConfirmService {
         }
     }
 
+    /**
+     * Отправляет в топик обратного потока подтверждение успешной обработки сообщений
+     */
+    public void sendConfirm() {
+        String timestamp = Timestamp.from(Instant.now().minus(Duration.ofMinutes(1))).toString();
+        List<TransactionDto> transactionDtos =
+                TransactionRepository.findTransactionsByTimestamp(timestamp, CHECK_TIMEOUT);
+
+        ConfirmDto confirm = new ConfirmDto(
+                timestamp,
+                createCheckSum(transactionDtos)
+        );
+
+        producer.send(
+                new ProducerRecord<>(TOPIC_NAME, confirm),
+                (recordMetadata, e) -> onCompletionCallback(recordMetadata, e, confirm)
+        );
+
+        producer.flush();
+    }
+
     private void accept(TopicPartition partition) {
         var offsetAndMetadata = currentOffsets.get(partition);
         if (nonNull(offsetAndMetadata)) {
             consumer.seek(partition, offsetAndMetadata);
+        }
+    }
+
+    private void onCompletionCallback(RecordMetadata recordMetadata, Exception e, ConfirmDto confirm) {
+        if (e != null) {
+            log.error("Ошибка отправки сообщения! Offset: {}, Partition: {}, Error: {}",
+                    recordMetadata.offset(),
+                    recordMetadata.partition(),
+                    e.getMessage()
+            );
+        } else {
+            log.trace("Сообщение успешно отправлено: {}", confirm);
         }
     }
 
@@ -104,11 +147,15 @@ public class ConfirmService {
                         try {
                             log.warn(new ObjectMapper().writeValueAsString(transactionDto));
                         } catch (JsonProcessingException e) {
+                            log.error("Ошибка маппинга TransactionDto: {}", transactionDto);
                             throw new RuntimeException(e);
                         }
                         producerService.sendTransaction(transactionDto);
                     }
             );
+        } else {
+            log.trace("Получено подтверждение успешной обработки сообщений, обработанные записи будут удалены из таблицы подтверждения");
+            TransactionRepository.deleteTransactionsByTimestamp(timestamp, checkTimeout);
         }
     }
 
@@ -121,8 +168,8 @@ public class ConfirmService {
             }
             byte[] digest = messageDigest.digest();
             return new BigInteger(1, digest).toString(16);
-        } catch (
-                NoSuchAlgorithmException e) {
+        } catch (NoSuchAlgorithmException e) {
+            log.error("Ошибка создания чексуммы подтверждения");
             throw new RuntimeException(e);
         }
     }

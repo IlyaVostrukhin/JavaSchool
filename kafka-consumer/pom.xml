@@ -29,6 +29,11 @@
     <dependencies>
         <dependency>
             <groupId>sbp.school</groupId>
+            <artifactId>confirm</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>sbp.school</groupId>
             <artifactId>kafka-entity</artifactId>
             <version>${project.version}</version>
         </dependency>

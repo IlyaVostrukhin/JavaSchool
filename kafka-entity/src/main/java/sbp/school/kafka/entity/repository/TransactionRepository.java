@@ -72,4 +72,26 @@ public class TransactionRepository {
         }
         return result;
     }
+
+    @SneakyThrows
+    public static void deleteTransactionsByTimestamp(String timestamp, Long timeout) {
+        try {
+            Class.forName(driver);
+            try (
+                    Connection conn = DriverManager.getConnection(jdbcURL);
+                    PreparedStatement prepStat = conn.prepareStatement(
+                            "delete from transactions WHERE date " +
+                                    ">= cast (? as timestamp) - cast (? as interval second)"
+                    )
+            ) {
+                prepStat.setTimestamp(1, Timestamp.valueOf(timestamp));
+                prepStat.setLong(2, Integer.parseInt(String.valueOf(timeout)));
+                prepStat.execute();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } catch (ClassNotFoundException exception) {
+            throw new RuntimeException(exception);
+        }
+    }
 }
