@@ -7,6 +7,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import sbp.school.kafka.confirm.service.ConfirmService;
 import sbp.school.kafka.consumer.config.KafkaConfig;
 import sbp.school.kafka.consumer.config.PropertiesReader;
 
@@ -26,8 +27,11 @@ public class ConsumerService {
     private final KafkaConsumer<String, String> consumer;
     private final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new HashMap<>();
 
+    private final ConfirmService confirmService;
+
     public ConsumerService(String groupId) {
-        consumer = KafkaConfig.getTransactionConsumer(groupId);
+        this.consumer = KafkaConfig.getTransactionConsumer(groupId);
+        this.confirmService = new ConfirmService(groupId);
     }
 
     public void listen() {
@@ -66,6 +70,7 @@ public class ConsumerService {
         } finally {
             try {
                 consumer.commitSync();
+                confirmService.sendConfirm();
             } finally {
                 consumer.close();
             }
