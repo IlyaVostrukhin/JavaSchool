@@ -1,13 +1,14 @@
 package sbp.school.kafka.producer.config;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import sbp.school.kafka.entity.dto.TransactionDto;
 
 import java.util.Properties;
 
 public class KafkaConfig {
-    public static KafkaProducer<String, TransactionDto> getTransactionProducer() {
+    public static Producer<String, TransactionDto> getTransactionProducer() {
         Properties properties = PropertiesReader.readProperties("application.properties");
         Properties kafkaProperties = new Properties();
 

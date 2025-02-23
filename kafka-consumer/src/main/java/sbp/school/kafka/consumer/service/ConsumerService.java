@@ -2,9 +2,9 @@ package sbp.school.kafka.consumer.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import sbp.school.kafka.confirm.service.ConfirmService;
@@ -24,14 +24,14 @@ import static java.util.Objects.nonNull;
 @Slf4j
 public class ConsumerService {
 
-    private final KafkaConsumer<String, String> consumer;
+    private Consumer<String, String> consumer;
     private final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new HashMap<>();
 
     private final ConfirmService confirmService;
 
-    public ConsumerService(String groupId) {
+    public ConsumerService(String groupId, ConfirmService confirmService) {
         this.consumer = KafkaConfig.getTransactionConsumer(groupId);
-        this.confirmService = new ConfirmService(groupId);
+        this.confirmService = confirmService;
     }
 
     public void listen() {
@@ -63,6 +63,7 @@ public class ConsumerService {
                     );
                 }
 
+                confirmService.sendConfirm();
                 consumer.commitAsync();
             }
         } catch (Exception e) {
@@ -70,11 +71,14 @@ public class ConsumerService {
         } finally {
             try {
                 consumer.commitSync();
-                confirmService.sendConfirm();
             } finally {
                 consumer.close();
             }
         }
+    }
+
+    public void setConsumer(Consumer<String, String> consumer) {
+        this.consumer = consumer;
     }
 
     private void accept(TopicPartition partition) {
