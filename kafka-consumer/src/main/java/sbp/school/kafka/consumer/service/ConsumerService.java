@@ -63,6 +63,7 @@ public class ConsumerService {
                     );
                 }
 
+                confirmService.sendConfirm();
                 consumer.commitAsync();
             }
         } catch (Exception e) {
@@ -70,7 +71,6 @@ public class ConsumerService {
         } finally {
             try {
                 consumer.commitSync();
-                confirmService.sendConfirm();
             } finally {
                 consumer.close();
             }

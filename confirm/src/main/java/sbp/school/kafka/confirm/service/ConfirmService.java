@@ -43,6 +43,10 @@ public class ConfirmService {
     private final Long CHECK_TIMEOUT = Long.parseLong(PropertiesReader
             .readProperties("confirm.properties")
             .getProperty("confirm.check.timeout"));
+    private final Long DURATION = Long.parseLong(PropertiesReader
+            .readProperties("confirm.properties")
+            .getProperty("confirm.duration"));
+
     private Consumer<String, ConfirmDto> consumer;
     private Producer<String, ConfirmDto> producer;
     private final ProducerService producerService;
@@ -102,7 +106,7 @@ public class ConfirmService {
      * Отправляет в топик обратного потока подтверждение успешной обработки сообщений
      */
     public void sendConfirm() {
-        String timestamp = Timestamp.from(Instant.now().minus(Duration.ofMinutes(1))).toString();
+        String timestamp = Timestamp.from(Instant.now().minus(Duration.ofMinutes(DURATION))).toString();
         List<TransactionDto> transactionDtos =
                 TransactionRepository.findTransactionsByTimestamp(timestamp, CHECK_TIMEOUT);
 
@@ -111,12 +115,14 @@ public class ConfirmService {
                 createCheckSum(transactionDtos)
         );
 
-        producer.send(
-                new ProducerRecord<>(TOPIC_NAME, confirm),
-                (recordMetadata, e) -> onCompletionCallback(recordMetadata, e, confirm)
-        );
-
-        producer.flush();
+        try {
+            producer.send(
+                    new ProducerRecord<>(TOPIC_NAME, confirm),
+                    (recordMetadata, e) -> onCompletionCallback(recordMetadata, e, confirm)
+            );
+        } finally {
+            producer.flush();
+        }
     }
 
     private void accept(TopicPartition partition) {
