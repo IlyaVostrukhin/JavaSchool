@@ -3,11 +3,11 @@ package sbp.school.kafka.confirm.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -43,8 +43,8 @@ public class ConfirmService {
     private final Long CHECK_TIMEOUT = Long.parseLong(PropertiesReader
             .readProperties("confirm.properties")
             .getProperty("confirm.check.timeout"));
-    private final KafkaConsumer<String, ConfirmDto> consumer;
-    private final KafkaProducer<String, ConfirmDto> producer;
+    private Consumer<String, ConfirmDto> consumer;
+    private Producer<String, ConfirmDto> producer;
     private final ProducerService producerService;
     private final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new HashMap<>();
 
@@ -172,5 +172,13 @@ public class ConfirmService {
             log.error("Ошибка создания чексуммы подтверждения");
             throw new RuntimeException(e);
         }
+    }
+
+    public void setConsumer(Consumer<String, ConfirmDto> consumer) {
+        this.consumer = consumer;
+    }
+
+    public void setProducer(Producer<String, ConfirmDto> producer) {
+        this.producer = producer;
     }
 }

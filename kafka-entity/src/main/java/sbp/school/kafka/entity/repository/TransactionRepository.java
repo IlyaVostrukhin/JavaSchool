@@ -12,7 +12,7 @@ import java.util.List;
 @Slf4j
 public class TransactionRepository {
     private static final String driver = "org.h2.Driver";
-    private static final String jdbcURL = "jdbc:h2:~/school";
+    private static final String jdbcURL = "jdbc:h2:~/school;CACHE_SIZE=8192;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE";
 
     @SneakyThrows
     public static void createTransactionTable() {
